@@ -52,11 +52,13 @@ class MySmspec:
     def __init__(self, SMSPECFile:str): 
         f = open(SMSPECFile,"rb")
         curPos = 0
-        self.__df = pd.DataFrame() 
+        self.__df = pd.DataFrame()         
         while (f.read(4)):
             block, blockName, curPos = self.__Block(SMSPECFile, curPos)
-            if (blockName == "KEYWORDS" or blockName == "WGNAMES" or blockName == "UNITS" or blockName == "NUMS"):
+            if (blockName == "KEYWORDS" or blockName == "UNITS" or blockName == "NUMS" or blockName == "NAMES" or blockName == "WGNAMES"):
+                if blockName=="NAMES": blockName="WGNAMES"
                 self.__df[blockName] = block
+                
             f.seek(curPos)
         f.close()
         fname = splitext(basename(SMSPECFile))
@@ -66,13 +68,16 @@ class MySmspec:
         for s in s00:
             f = open(s,"rb")
             curPos = 0
+            params_df=[]               
             while (f.read(4)):
                 block, blockName, curPos = self.__Block(s, curPos)
                 if (blockName == "PARAMS"):
                     i += 1
-                    self.__df["PARAMS" + str(i)] = block
+                    # self.__df["PARAMS" + str(i)] = block
+                    params_df.append(pd.DataFrame(columns=["PARAMS" + str(i)], data=block))
                 f.seek(curPos)
             f.close()
+        self.__df = pd.concat([self.__df]+params_df, axis=1)
             
     @property
     def get_data(self)->pd.DataFrame:
