@@ -63,7 +63,7 @@ class MySmspec:
         f.close()
         fname = splitext(basename(SMSPECFile))
         fpath = dirname(abspath(SMSPECFile))
-        s00 = [fpath + "\\" + file for file in listdir(fpath) if re.fullmatch(fname[0] + r"\.([sS]\d+|UNSMRY|unsmry)", basename(file))]
+        s00 = [fpath + r'/' + file for file in listdir(fpath) if re.fullmatch(fname[0] + r"\.([sS]\d+|UNSMRY|unsmry)", basename(file))]
         i = 0
         for s in s00:
             f = open(s,"rb")
