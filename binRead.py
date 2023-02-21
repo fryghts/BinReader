@@ -83,13 +83,18 @@ class MySmspec:
     def get_data(self)->pd.DataFrame:
         return self.__df
     
-    def get_main(self, keywords:List[str], wgnames:List[str])->pd.DataFrame: 
+    def get_main(self, keywords:List[str], wgnames:List[str], use_unit:bool=True)->pd.DataFrame: 
         df = self.__df.loc[self.__df["KEYWORDS"].isin(keywords) & self.__df["WGNAMES"].isin(wgnames)]
-        return pd.DataFrame(
-                    [[df[col][ind] for ind in df.index] for col in df.columns[4:]],
-                    columns = ["{0}: {1}({2})".format(df["WGNAMES"][i], df["KEYWORDS"][i], df["UNITS"][i]) for i in df.index],
-                    index = self.get_all_dates
-                    )
+        cols=(df['WGNAMES']+':'+df['KEYWORDS']+('('+df['UNITS']+')' if use_unit else '')).to_list()
+        df=df.iloc[:, 4:].T
+        df.columns=cols
+        df.index=self.get_all_dates
+        return df
+        # return pd.DataFrame(
+        #             [[df[col][ind] for ind in df.index] for col in df.columns[4:]],
+        #             columns = ["{0}:{1}({2})".format(df["WGNAMES"][i], df["KEYWORDS"][i], df["UNITS"][i]) for i in df.index],
+        #             index = self.get_all_dates
+        #             )
 
     @property
     def get_all_dates(self)->List[pd.Timestamp]:
