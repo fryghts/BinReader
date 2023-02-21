@@ -83,9 +83,9 @@ class MySmspec:
     def get_data(self)->pd.DataFrame:
         return self.__df
     
-    def get_main(self, keywords:List[str], wgnames:List[str], use_unit:bool=True)->pd.DataFrame: 
+    def get_main(self, keywords:List[str], wgnames:List[str], use_units:bool=True)->pd.DataFrame: 
         df = self.__df.loc[self.__df["KEYWORDS"].isin(keywords) & self.__df["WGNAMES"].isin(wgnames)]
-        cols=(df['WGNAMES']+':'+df['KEYWORDS']+('('+df['UNITS']+')' if use_unit else '')).to_list()
+        cols=(df['WGNAMES']+':'+df['KEYWORDS']+('('+df['UNITS']+')' if use_units else '')).to_list()
         df=df.iloc[:, 4:].T
         df.columns=cols
         df.index=self.get_all_dates
