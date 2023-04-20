@@ -78,6 +78,8 @@ class MySmspec:
                 f.seek(curPos)
             f.close()
         self.__df = pd.concat([self.__df]+params_df, axis=1)
+        self.__df.loc[self.__df['KEYWORDS'].str.startswith('R'), 'WGNAMES']= 'REGION '+ self.__df['NUMS'].astype(str)
+        self.__df.loc[self.__df['KEYWORDS'].str.startswith('A'), 'WGNAMES']= 'AQUIFER '+ self.__df['NUMS'].astype(str)
             
     @property
     def get_data(self)->pd.DataFrame:
@@ -113,7 +115,8 @@ class MySmspec:
         
     @property
     def get_all_regions(self)->List[str]:
-        return ["REGION {0}".format(num) for num in list(set(self.__df.loc[self.__df["KEYWORDS"].str.startswith('R')]["NUMS"]))]
+        # return ["REGION {0}".format(num) for num in list(set(self.__df.loc[self.__df["KEYWORDS"].str.startswith('R')]["NUMS"]))]
+        return list(set(self.__df.loc[self.__df["KEYWORDS"].str.startswith('R') & (self.__df["WGNAMES"] != ":+:+:+:+")]["WGNAMES"]))
         
     @property
     def get_all_wells(self)->List[str]:
@@ -121,7 +124,8 @@ class MySmspec:
         
     @property
     def get_all_aquifers(self)->List[str]:
-        return ["AQUIFER {0}".format(num) for num in list(set(self.__df.loc[self.__df["KEYWORDS"].str.startswith('A')]["NUMS"]))]
+        # return ["AQUIFER {0}".format(num) for num in list(set(self.__df.loc[self.__df["KEYWORDS"].str.startswith('A')]["NUMS"]))]
+        return list(set(self.__df.loc[self.__df["KEYWORDS"].str.startswith('A') & (self.__df["WGNAMES"] != ":+:+:+:+")]["WGNAMES"]))
     
     @property
     def get_all_groups(self)->List[str]:
