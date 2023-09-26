@@ -52,39 +52,51 @@ class MySmspec:
     def __init__(self, SMSPECFile:str): 
         f = open(SMSPECFile,"rb")
         curPos = 0
-        self.__df = pd.DataFrame() 
+        self.__df = pd.DataFrame()         
         while (f.read(4)):
             block, blockName, curPos = self.__Block(SMSPECFile, curPos)
-            if (blockName == "KEYWORDS" or blockName == "WGNAMES" or blockName == "UNITS" or blockName == "NUMS"):
+            if (blockName == "KEYWORDS" or blockName == "UNITS" or blockName == "NUMS" or blockName == "NAMES" or blockName == "WGNAMES"):
+                if blockName=="NAMES": blockName="WGNAMES"
                 self.__df[blockName] = block
+                
             f.seek(curPos)
         f.close()
         fname = splitext(basename(SMSPECFile))
         fpath = dirname(abspath(SMSPECFile))
-        s00 = [fpath + "\\" + file for file in listdir(fpath) if re.fullmatch(fname[0] + r"\.([sS]\d+|UNSMRY|unsmry)", basename(file))]
+        s00 = [fpath + r'/' + file for file in listdir(fpath) if re.fullmatch(fname[0] + r"\.([sS]\d+|UNSMRY|unsmry)", basename(file))]
         i = 0
         for s in s00:
             f = open(s,"rb")
             curPos = 0
+            params_df=[]               
             while (f.read(4)):
                 block, blockName, curPos = self.__Block(s, curPos)
                 if (blockName == "PARAMS"):
                     i += 1
-                    self.__df["PARAMS" + str(i)] = block
+                    # self.__df["PARAMS" + str(i)] = block
+                    params_df.append(pd.DataFrame(columns=["PARAMS" + str(i)], data=block))
                 f.seek(curPos)
             f.close()
+        self.__df = pd.concat([self.__df]+params_df, axis=1)
+        self.__df.loc[self.__df['KEYWORDS'].str.startswith('R'), 'WGNAMES']= 'REGION '+ self.__df['NUMS'].astype(str)
+        self.__df.loc[self.__df['KEYWORDS'].str.startswith('A'), 'WGNAMES']= 'AQUIFER '+ self.__df['NUMS'].astype(str)
             
     @property
     def get_data(self)->pd.DataFrame:
         return self.__df
     
-    def get_main(self, keywords:List[str], wgnames:List[str])->pd.DataFrame: 
+    def get_main(self, keywords:List[str], wgnames:List[str], use_units:bool=True)->pd.DataFrame: 
         df = self.__df.loc[self.__df["KEYWORDS"].isin(keywords) & self.__df["WGNAMES"].isin(wgnames)]
-        return pd.DataFrame(
-                    [[df[col][ind] for ind in df.index] for col in df.columns[4:]],
-                    columns = ["{0}: {1}({2})".format(df["WGNAMES"][i], df["KEYWORDS"][i], df["UNITS"][i]) for i in df.index],
-                    index = self.get_all_dates
-                    )
+        cols=(df['WGNAMES']+':'+df['KEYWORDS']+('('+df['UNITS']+')' if use_units else '')).to_list()
+        df=df.iloc[:, 4:].T
+        df.columns=cols
+        df.index=self.get_all_dates
+        return df
+        # return pd.DataFrame(
+        #             [[df[col][ind] for ind in df.index] for col in df.columns[4:]],
+        #             columns = ["{0}:{1}({2})".format(df["WGNAMES"][i], df["KEYWORDS"][i], df["UNITS"][i]) for i in df.index],
+        #             index = self.get_all_dates
+        #             )
 
     @property
     def get_all_dates(self)->List[pd.Timestamp]:
@@ -103,7 +115,8 @@ class MySmspec:
         
     @property
     def get_all_regions(self)->List[str]:
-        return ["REGION {0}".format(num) for num in list(set(self.__df.loc[self.__df["KEYWORDS"].str.startswith('R')]["NUMS"]))]
+        # return ["REGION {0}".format(num) for num in list(set(self.__df.loc[self.__df["KEYWORDS"].str.startswith('R')]["NUMS"]))]
+        return list(set(self.__df.loc[self.__df["KEYWORDS"].str.startswith('R') & (self.__df["WGNAMES"] != ":+:+:+:+")]["WGNAMES"]))
         
     @property
     def get_all_wells(self)->List[str]:
@@ -111,7 +124,8 @@ class MySmspec:
         
     @property
     def get_all_aquifers(self)->List[str]:
-        return ["AQUIFER {0}".format(num) for num in list(set(self.__df.loc[self.__df["KEYWORDS"].str.startswith('A')]["NUMS"]))]
+        # return ["AQUIFER {0}".format(num) for num in list(set(self.__df.loc[self.__df["KEYWORDS"].str.startswith('A')]["NUMS"]))]
+        return list(set(self.__df.loc[self.__df["KEYWORDS"].str.startswith('A') & (self.__df["WGNAMES"] != ":+:+:+:+")]["WGNAMES"]))
     
     @property
     def get_all_groups(self)->List[str]:
